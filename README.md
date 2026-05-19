@@ -7,10 +7,10 @@ El proyecto nace de la necesidad de **Innovate Tech**, una empresa dedicada a la
 ## 👥 Integrantes del Grupo
 * **Nombre del grupo de trabajo:** `pro-asixc1[Grupo]-[GrupDeTreball]` (Ejemplo: `pro-asixcla-g1`) 
 * **Miembros:**
-  * Josué Amador ([@UsuarioGitHub](https://github.com/ITB2526-JosueAmador))
-  * Caio Ganais ([@UsuarioGitHub](https://github.com/ITB2526-CaioGanais))
-  * Alex Capitán ([@UsuarioGitHub](https://github.com/ITB2526-AlexCapitan))
-  * Ramiro Cori ([@UsuarioGitHub](https://github.com/ITB2526-RamiroCori))
+  * Josué Amador ([@JosueGitHub](https://github.com/ITB2526-JosueAmador))
+  * Caio Ganais ([@CaioGitHub](https://github.com/ITB2526-CaioGanais))
+  * Alex Capitán ([@AlexGitHub](https://github.com/ITB2526-AlexCapitan))
+  * Ramiro Cori ([@RamiroGitHub](https://github.com/ITB2526-RamiroCori))
 
 ---
 
