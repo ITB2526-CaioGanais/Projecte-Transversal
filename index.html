@@ -1,0 +1,1238 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>innovatetech.internal — Portal de Servicios</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Rajdhani:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --c-mag: #ff00ff;
+  --c-cyan: #00ffff;
+  --c-purple: #7700ff;
+  --c-orange: #ff8800;
+  --c-green: #00ff88;
+  --c-dark: #03000c;
+  --c-glass: rgba(3, 0, 12, 0.72);
+  --font-display: 'Orbitron', monospace;
+  --font-body: 'Rajdhani', sans-serif;
+}
+
+html { scroll-behavior: smooth; }
+
+body {
+  background: #03000c;
+  color: #dde0ff;
+  font-family: var(--font-body);
+  overflow-x: hidden;
+  cursor: crosshair;
+}
+
+/* CUSTOM CURSOR */
+.cursor-ring {
+  position: fixed;
+  width: 28px; height: 28px;
+  border: 1px solid rgba(255,0,255,0.6);
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 9999;
+  transform: translate(-50%,-50%);
+  transition: width 0.2s, height 0.2s, border-color 0.2s;
+  mix-blend-mode: screen;
+}
+.cursor-dot {
+  position: fixed;
+  width: 4px; height: 4px;
+  background: #ff00ff;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 9999;
+  transform: translate(-50%,-50%);
+  box-shadow: 0 0 6px #ff00ff;
+}
+
+/* CANVAS */
+#bg-canvas {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+}
+
+/* OVERLAYS */
+.scanlines {
+  position: fixed;
+  inset: 0;
+  background: repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(0,0,0,0.04) 3px, rgba(0,0,0,0.04) 4px);
+  z-index: 1;
+  pointer-events: none;
+}
+.vignette {
+  position: fixed;
+  inset: 0;
+  background: radial-gradient(ellipse at 50% 40%, transparent 55%, rgba(0,0,0,0.85) 100%);
+  z-index: 1;
+  pointer-events: none;
+}
+
+/* NAV */
+#navbar {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.7rem 2rem;
+  background: rgba(3,0,12,0.85);
+  backdrop-filter: blur(24px) saturate(180%);
+  border-bottom: 1px solid rgba(255,0,255,0.15);
+  transition: border-color 0.5s;
+}
+
+.nav-logo {
+  font-family: var(--font-display);
+  font-size: 1rem;
+  font-weight: 900;
+  letter-spacing: 3px;
+  color: #fff;
+  text-shadow: 0 0 20px rgba(255,0,255,0.8);
+}
+.nav-logo span {
+  background: linear-gradient(90deg, #ff00ff, #00ffff);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.nav-right {
+  display: flex;
+  gap: 1.5rem;
+  align-items: center;
+}
+
+.nav-chip {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 1px;
+}
+.nav-chip .lbl {
+  font-family: var(--font-display);
+  font-size: 0.5rem;
+  letter-spacing: 3px;
+  color: rgba(0,255,255,0.4);
+  text-transform: uppercase;
+}
+.nav-chip .val {
+  font-family: var(--font-display);
+  font-size: 0.7rem;
+  color: #00ffff;
+  letter-spacing: 1px;
+}
+
+.nav-online {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-family: var(--font-display);
+  font-size: 0.6rem;
+  color: #00ff88;
+  letter-spacing: 2px;
+}
+.online-dot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: #00ff88;
+  box-shadow: 0 0 10px #00ff88;
+  animation: pls 1.5s ease-in-out infinite;
+}
+@keyframes pls { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.4;transform:scale(0.7)} }
+
+/* PAGE */
+.page {
+  position: relative;
+  z-index: 10;
+}
+
+/* HERO */
+.hero {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 6rem 2rem 4rem;
+  position: relative;
+}
+
+.hero-badge {
+  font-family: var(--font-display);
+  font-size: 0.6rem;
+  letter-spacing: 8px;
+  color: rgba(0,255,255,0.5);
+  text-transform: uppercase;
+  border: 1px solid rgba(0,255,255,0.2);
+  padding: 0.4rem 1.5rem;
+  border-radius: 100px;
+  margin-bottom: 2rem;
+  backdrop-filter: blur(10px);
+  background: rgba(0,255,255,0.04);
+}
+
+.hero-title {
+  font-family: var(--font-display);
+  font-size: clamp(2.5rem, 8vw, 6.5rem);
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: 6px;
+  margin-bottom: 0.2rem;
+  position: relative;
+  color: #fff;
+  text-shadow: 0 0 40px rgba(255,0,255,0.6), 0 0 80px rgba(255,0,255,0.3);
+}
+
+.hero-title::before, .hero-title::after {
+  content: attr(data-text);
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  font-family: var(--font-display);
+  font-weight: 900;
+  letter-spacing: 6px;
+}
+.hero-title::before {
+  color: #ff00ff;
+  clip-path: polygon(0 0, 100% 0, 100% 45%, 0 45%);
+  animation: glitch-a 4s infinite;
+}
+.hero-title::after {
+  color: #00ffff;
+  clip-path: polygon(0 60%, 100% 60%, 100% 100%, 0 100%);
+  animation: glitch-b 4s infinite;
+}
+@keyframes glitch-a {
+  0%,88%,100%{opacity:0;transform:translateX(0)}
+  91%{opacity:0.7;transform:translateX(-4px)}
+  94%{opacity:0.5;transform:translateX(3px)}
+  97%{opacity:0}
+}
+@keyframes glitch-b {
+  0%,90%,100%{opacity:0;transform:translateX(0)}
+  93%{opacity:0.6;transform:translateX(4px)}
+  96%{opacity:0.4;transform:translateX(-2px)}
+  99%{opacity:0}
+}
+
+.hero-domain {
+  font-family: var(--font-display);
+  font-size: clamp(0.9rem, 2.5vw, 1.6rem);
+  font-weight: 400;
+  letter-spacing: 10px;
+  background: linear-gradient(90deg, #ff00ff, #00ffff);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  margin-bottom: 1.5rem;
+}
+
+.hero-subtitle {
+  font-size: 1rem;
+  color: rgba(180,180,255,0.5);
+  letter-spacing: 3px;
+  font-weight: 300;
+  margin-bottom: 3rem;
+  max-width: 600px;
+}
+
+.hero-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.8rem;
+  justify-content: center;
+}
+
+.stat-pill {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  background: rgba(255,0,255,0.07);
+  border: 1px solid rgba(255,0,255,0.2);
+  border-radius: 100px;
+  padding: 0.55rem 1.2rem;
+  font-family: var(--font-display);
+  font-size: 0.65rem;
+  color: rgba(255,150,255,0.9);
+  letter-spacing: 1px;
+  backdrop-filter: blur(12px);
+  transition: border-color 0.3s;
+}
+.stat-pill.cyan { border-color: rgba(0,255,255,0.2); color: rgba(100,255,255,0.9); background: rgba(0,255,255,0.05); }
+.stat-pill.green { border-color: rgba(0,255,136,0.2); color: rgba(100,255,180,0.9); background: rgba(0,255,136,0.05); }
+
+.dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: #ff00ff;
+  box-shadow: 0 0 8px #ff00ff;
+  animation: pls 2s infinite;
+  flex-shrink: 0;
+}
+.dot.c { background: #00ffff; box-shadow: 0 0 8px #00ffff; }
+.dot.g { background: #00ff88; box-shadow: 0 0 8px #00ff88; }
+
+.scroll-hint {
+  position: absolute;
+  bottom: 2.5rem;
+  display: flex; flex-direction: column;
+  align-items: center; gap: 0.5rem;
+  color: rgba(0,255,255,0.3);
+  font-family: var(--font-display);
+  font-size: 0.55rem;
+  letter-spacing: 4px;
+  animation: bob 2s ease-in-out infinite;
+}
+@keyframes bob {0%,100%{transform:translateY(0)} 50%{transform:translateY(8px)}}
+.chev {
+  width: 16px; height: 16px;
+  border-right: 2px solid rgba(0,255,255,0.3);
+  border-bottom: 2px solid rgba(0,255,255,0.3);
+  transform: rotate(45deg);
+}
+
+/* SECTION */
+.section {
+  min-height: 100vh;
+  padding: 7rem 2rem 5rem;
+  display: flex; flex-direction: column;
+  align-items: center;
+  position: relative;
+}
+
+.section::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, transparent, rgba(3,0,12,0.5) 20%, rgba(3,0,12,0.5) 80%, transparent);
+  pointer-events: none;
+}
+
+.sec-hdr {
+  text-align: center;
+  margin-bottom: 3rem;
+  position: relative;
+  z-index: 1;
+}
+.sec-title {
+  font-family: var(--font-display);
+  font-size: clamp(1.2rem, 3vw, 2rem);
+  font-weight: 700;
+  letter-spacing: 4px;
+  color: #fff;
+  text-shadow: 0 0 30px rgba(255,0,255,0.4);
+  margin-bottom: 0.5rem;
+}
+.sec-title span { color: var(--c-mag); }
+.sec-line {
+  width: 80px; height: 2px;
+  background: linear-gradient(90deg, transparent, #ff00ff, #00ffff, transparent);
+  margin: 0.8rem auto 1rem;
+}
+.sec-line.cyan { background: linear-gradient(90deg, transparent, #00ffff, #0088ff, transparent); }
+.sec-line.orange { background: linear-gradient(90deg, transparent, #ff8800, #ff00aa, transparent); }
+.sec-desc {
+  font-size: 0.9rem;
+  color: rgba(180,180,255,0.45);
+  letter-spacing: 2px;
+}
+
+/* SERVICES */
+.services-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 1.5rem;
+  max-width: 1100px;
+  width: 100%;
+  position: relative;
+  z-index: 1;
+}
+
+.svc-card {
+  background: rgba(3,0,12,0.75);
+  border: 1px solid rgba(255,0,255,0.15);
+  border-radius: 20px;
+  padding: 2rem 1.5rem 1.8rem;
+  text-decoration: none;
+  color: inherit;
+  display: flex; flex-direction: column;
+  align-items: center; text-align: center;
+  gap: 0.9rem;
+  backdrop-filter: blur(24px);
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.4s cubic-bezier(0.23,1,0.32,1), border-color 0.3s, box-shadow 0.4s;
+}
+
+.svc-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--cc, #ff00ff), transparent);
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+.svc-card::after {
+  content: '';
+  position: absolute; inset: 0;
+  background: radial-gradient(circle at 50% 0%, var(--cc, #ff00ff) 0%, transparent 60%);
+  opacity: 0;
+  transition: opacity 0.4s;
+  pointer-events: none;
+}
+.svc-card:hover {
+  transform: translateY(-10px) scale(1.03);
+  border-color: var(--cc, #ff00ff);
+  box-shadow: 0 24px 60px rgba(0,0,0,0.4), 0 0 40px color-mix(in srgb, var(--cc, #ff00ff) 20%, transparent);
+}
+.svc-card:hover::before { opacity: 1; }
+.svc-card:hover::after { opacity: 0.08; }
+.svc-card:hover .svc-arrow { opacity: 1; transform: translateX(0); }
+.svc-card:hover .svc-icon { transform: scale(1.15) rotate(5deg); filter: drop-shadow(0 0 14px var(--cc, #ff00ff)); }
+
+.svc-icon {
+  font-size: 2.8rem;
+  filter: drop-shadow(0 0 8px rgba(255,0,255,0.5));
+  transition: transform 0.4s cubic-bezier(0.23,1,0.32,1), filter 0.3s;
+}
+.svc-name {
+  font-family: var(--font-display);
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--cc, #ff00ff);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+.svc-desc {
+  font-size: 0.85rem;
+  color: rgba(200,200,255,0.45);
+  line-height: 1.6;
+  font-weight: 300;
+}
+.svc-path {
+  font-family: var(--font-display);
+  font-size: 0.6rem;
+  color: rgba(255,255,255,0.2);
+  letter-spacing: 2px;
+  margin-top: auto;
+}
+.svc-arrow {
+  position: absolute; bottom: 1.2rem; right: 1.4rem;
+  font-size: 1.1rem;
+  color: var(--cc, #ff00ff);
+  opacity: 0;
+  transform: translateX(-6px);
+  transition: all 0.3s;
+}
+
+/* WEATHER */
+.weather-grid {
+  display: grid;
+  grid-template-columns: 380px 1fr;
+  gap: 1.5rem;
+  max-width: 1100px;
+  width: 100%;
+  position: relative;
+  z-index: 1;
+}
+
+.w-card {
+  background: rgba(0,5,20,0.8);
+  border: 1px solid rgba(0,255,255,0.15);
+  border-radius: 20px;
+  padding: 2rem;
+  backdrop-filter: blur(24px);
+}
+
+.w-loading, .w-loaded { font-family: var(--font-display); }
+
+.w-loc { font-size: 0.65rem; letter-spacing: 4px; color: rgba(0,255,255,0.5); text-transform: uppercase; margin-bottom: 0.3rem; }
+.w-city { font-size: 1.3rem; font-weight: 600; color: #fff; margin-bottom: 0.3rem; letter-spacing: 1px; }
+.w-datetime { font-family: var(--font-display); font-size: 0.6rem; color: rgba(0,255,255,0.35); letter-spacing: 2px; margin-bottom: 1.5rem; }
+
+.w-current { display: flex; align-items: center; gap: 1.5rem; margin-bottom: 1.5rem; }
+.w-emoji { font-size: 4rem; filter: drop-shadow(0 0 16px rgba(0,255,255,0.4)); }
+.w-temp { font-family: var(--font-display); font-size: 3.5rem; font-weight: 900; color: #00ffff; text-shadow: 0 0 30px rgba(0,255,255,0.5); line-height: 1; }
+.w-feels { font-size: 0.8rem; color: rgba(0,255,255,0.5); letter-spacing: 1px; margin-top: 0.3rem; }
+.w-cond { font-size: 0.9rem; color: rgba(180,220,255,0.7); letter-spacing: 2px; text-transform: uppercase; margin-top: 0.2rem; }
+
+.w-details { display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem; margin-bottom: 1.5rem; }
+.w-det {
+  background: rgba(0,255,255,0.04);
+  border: 1px solid rgba(0,255,255,0.1);
+  border-radius: 12px;
+  padding: 0.8rem 1rem;
+}
+.w-det-lbl { font-family: var(--font-display); font-size: 0.5rem; color: rgba(0,255,255,0.35); letter-spacing: 3px; text-transform: uppercase; margin-bottom: 0.4rem; }
+.w-det-val { font-family: var(--font-display); font-size: 1rem; color: #00ffff; font-weight: 600; }
+
+.w-forecast-title { font-family: var(--font-display); font-size: 0.55rem; color: rgba(0,255,255,0.35); letter-spacing: 4px; text-transform: uppercase; margin-bottom: 0.8rem; }
+.w-forecast { display: flex; gap: 0.6rem; flex-wrap: wrap; }
+.w-fday {
+  flex: 1; min-width: 65px;
+  background: rgba(0,255,255,0.04);
+  border: 1px solid rgba(0,255,255,0.1);
+  border-radius: 12px;
+  padding: 0.8rem 0.5rem;
+  text-align: center;
+}
+.f-name { font-family: var(--font-display); font-size: 0.55rem; color: rgba(0,255,255,0.4); letter-spacing: 2px; text-transform: uppercase; margin-bottom: 0.4rem; }
+.f-ico { font-size: 1.3rem; margin-bottom: 0.4rem; }
+.f-hi { font-family: var(--font-display); font-size: 0.8rem; color: #00ffff; }
+.f-lo { font-family: var(--font-display); font-size: 0.7rem; color: rgba(0,200,255,0.4); }
+
+.map-card {
+  background: rgba(0,5,20,0.8);
+  border: 1px solid rgba(0,255,255,0.15);
+  border-radius: 20px;
+  overflow: hidden;
+  min-height: 480px;
+  display: flex; align-items: center; justify-content: center;
+  backdrop-filter: blur(24px);
+}
+.map-card iframe { width: 100%; height: 100%; min-height: 480px; border: none; }
+
+/* NEWS */
+.news-wrap {
+  max-width: 1100px;
+  width: 100%;
+  position: relative;
+  z-index: 1;
+}
+.news-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1.2rem;
+  margin-bottom: 2rem;
+}
+
+.news-card {
+  background: rgba(10,3,25,0.8);
+  border: 1px solid rgba(255,136,0,0.15);
+  border-radius: 16px;
+  padding: 1.5rem;
+  backdrop-filter: blur(20px);
+  text-decoration: none;
+  color: inherit;
+  display: flex; flex-direction: column;
+  gap: 0.7rem;
+  transition: transform 0.3s, border-color 0.3s, box-shadow 0.3s;
+  cursor: pointer;
+}
+.news-card:hover {
+  transform: translateY(-5px);
+  border-color: rgba(255,136,0,0.5);
+  box-shadow: 0 12px 35px rgba(255,136,0,0.1);
+}
+.news-src { font-family: var(--font-display); font-size: 0.55rem; color: #ff8800; letter-spacing: 3px; text-transform: uppercase; }
+.news-ttl { font-size: 0.95rem; line-height: 1.55; color: rgba(230,230,255,0.85); font-weight: 500; }
+.news-meta { display: flex; justify-content: space-between; align-items: center; margin-top: auto; }
+.news-time { font-size: 0.7rem; color: rgba(255,255,255,0.25); letter-spacing: 1px; }
+.news-score { font-family: var(--font-display); font-size: 0.65rem; color: #ff8800; }
+
+.news-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-family: var(--font-display);
+  font-size: 0.6rem;
+  color: rgba(255,136,0,0.4);
+  letter-spacing: 2px;
+  padding: 0 0.5rem;
+}
+.refresh-btn {
+  background: rgba(255,136,0,0.08);
+  border: 1px solid rgba(255,136,0,0.3);
+  color: #ff8800;
+  font-family: var(--font-display);
+  font-size: 0.6rem;
+  letter-spacing: 3px;
+  padding: 0.4rem 1rem;
+  border-radius: 100px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.refresh-btn:hover { background: rgba(255,136,0,0.15); border-color: rgba(255,136,0,0.6); }
+
+/* LOADING */
+.loading {
+  display: flex; align-items: center; gap: 0.6rem;
+  font-family: var(--font-display);
+  font-size: 0.65rem;
+  color: rgba(255,0,255,0.5);
+  letter-spacing: 3px;
+}
+.ld { width: 6px; height: 6px; border-radius: 50%; background: #ff00ff; animation: ld 1.4s infinite; }
+.ld:nth-child(2){animation-delay:.2s}
+.ld:nth-child(3){animation-delay:.4s}
+@keyframes ld{0%,100%{opacity:.2;transform:scale(.7)}50%{opacity:1;transform:scale(1.2)}}
+
+/* FOOTER */
+footer {
+  position: relative; z-index: 10;
+  text-align: center;
+  padding: 3rem 2rem;
+  border-top: 1px solid rgba(255,0,255,0.1);
+  background: rgba(3,0,12,0.9);
+  backdrop-filter: blur(20px);
+}
+.footer-logo {
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+  font-weight: 900;
+  letter-spacing: 4px;
+  color: rgba(255,255,255,0.8);
+  margin-bottom: 0.5rem;
+}
+.footer-logo span {
+  background: linear-gradient(90deg, #ff00ff, #00ffff);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.footer-sub { font-size: 0.75rem; color: rgba(180,180,255,0.3); letter-spacing: 3px; font-family: var(--font-display); }
+
+/* SECTION ENTER ANIMATIONS */
+.fade-in { opacity: 0; transform: translateY(30px); transition: opacity 0.8s, transform 0.8s; }
+.fade-in.visible { opacity: 1; transform: translateY(0); }
+
+@media (max-width: 900px) {
+  .weather-grid { grid-template-columns: 1fr; }
+  .nav-right { gap: 0.8rem; }
+  .nav-chip:nth-child(3) { display: none; }
+}
+@media (max-width: 600px) {
+  .nav-right { display: none; }
+  .hero-stats { flex-direction: column; align-items: center; }
+}
+</style>
+</head>
+<body>
+
+<div class="cursor-ring" id="cur-ring"></div>
+<div class="cursor-dot" id="cur-dot"></div>
+
+<canvas id="bg-canvas"></canvas>
+<div class="scanlines"></div>
+<div class="vignette"></div>
+
+<!-- NAV -->
+<nav id="navbar">
+  <div class="nav-logo">INNOVATE<span>TECH.INTERNAL</span></div>
+  <div class="nav-right">
+    <div class="nav-chip">
+      <span class="lbl">IP PÚBLICA</span>
+      <span class="val" id="nav-ip">···</span>
+    </div>
+    <div class="nav-chip">
+      <span class="lbl">HORA</span>
+      <span class="val" id="nav-time">--:--:--</span>
+    </div>
+    <div class="nav-chip">
+      <span class="lbl">CLIMA</span>
+      <span class="val" id="nav-weather">···</span>
+    </div>
+    <div class="nav-online">
+      <div class="online-dot"></div>
+      ONLINE
+    </div>
+  </div>
+</nav>
+
+<!-- PAGE -->
+<div class="page">
+
+  <!-- HERO -->
+  <section class="hero" id="sec-hero">
+    <div class="hero-badge">PLATAFORMA DE SERVICIOS INTERNOS — ACCESO UNIFICADO</div>
+    <h1 class="hero-title" data-text="INNOVATETECH">INNOVATETECH</h1>
+    <div class="hero-domain">.INTERNAL</div>
+    <p class="hero-subtitle">Portal de administración · Servicios distribuidos · Control total del sistema</p>
+    <div class="hero-stats">
+      <div class="stat-pill">
+        <span class="dot"></span>
+        <span>IP: <span id="stat-ip">Detectando...</span></span>
+      </div>
+      <div class="stat-pill cyan">
+        <span class="dot c"></span>
+        <span id="stat-time">--:--:--</span>
+      </div>
+      <div class="stat-pill cyan">
+        <span class="dot c"></span>
+        <span id="stat-date">---</span>
+      </div>
+      <div class="stat-pill green">
+        <span class="dot g"></span>
+        <span id="stat-weather">Localizando clima…</span>
+      </div>
+    </div>
+    <div class="scroll-hint">
+      <span>SCROLL</span>
+      <div class="chev"></div>
+    </div>
+  </section>
+
+  <!-- SERVICES -->
+  <section class="section" id="sec-services">
+    <div class="sec-hdr fade-in">
+      <div class="sec-title"><span>//</span> SERVICIOS</div>
+      <div class="sec-line"></div>
+      <div class="sec-desc">Accede a los servicios internos de la plataforma</div>
+    </div>
+    <div class="services-grid fade-in" style="transition-delay:.15s">
+      <a href="/music" class="svc-card" style="--cc:#ff00ff">
+        <div class="svc-icon">🎵</div>
+        <div class="svc-name">Streaming de Música</div>
+        <div class="svc-desc">Reproduce y gestiona tu biblioteca musical con streaming de alta fidelidad</div>
+        <div class="svc-path">/music</div>
+        <span class="svc-arrow">→</span>
+      </a>
+      <a href="/video" class="svc-card" style="--cc:#00ffff">
+        <div class="svc-icon">🎬</div>
+        <div class="svc-name">Streaming de Vídeo</div>
+        <div class="svc-desc">Plataforma VOD y transmisión en vivo con soporte de múltiples resoluciones</div>
+        <div class="svc-path">/video</div>
+        <span class="svc-arrow">→</span>
+      </a>
+      <a href="/mariadb" class="svc-card" style="--cc:#ff8800">
+        <div class="svc-icon">🗄️</div>
+        <div class="svc-name">PHPMyAdmin</div>
+        <div class="svc-desc">Administración de bases de datos MariaDB con interfaz web avanzada</div>
+        <div class="svc-path">/mariadb</div>
+        <span class="svc-arrow">→</span>
+      </a>
+      <a href="/logs" class="svc-card" style="--cc:#00ff88">
+        <div class="svc-icon">📊</div>
+        <div class="svc-name">Logs Generales</div>
+        <div class="svc-desc">Monitorización y análisis centralizado de registros del sistema en tiempo real</div>
+        <div class="svc-path">/logs</div>
+        <span class="svc-arrow">→</span>
+      </a>
+      <a href="/ldap-lam" class="svc-card" style="--cc:#aa44ff">
+        <div class="svc-icon">🔐</div>
+        <div class="svc-name">LDAP LAM</div>
+        <div class="svc-desc">Gestión de usuarios y directorio LDAP con administración avanzada de permisos</div>
+        <div class="svc-path">/ldap-lam</div>
+        <span class="svc-arrow">→</span>
+      </a>
+    </div>
+  </section>
+
+  <!-- WEATHER -->
+  <section class="section" id="sec-weather">
+    <div class="sec-hdr fade-in">
+      <div class="sec-title" style="text-shadow:0 0 30px rgba(0,255,255,0.4)"><span style="color:#00ffff">//</span> CLIMA & UBICACIÓN</div>
+      <div class="sec-line cyan"></div>
+      <div class="sec-desc">Condiciones meteorológicas en tiempo real y mapa de vientos</div>
+    </div>
+    <div class="weather-grid fade-in" style="transition-delay:.1s">
+      <div class="w-card">
+        <div id="w-loading" class="loading" style="padding:2rem 0">
+          <div class="ld"></div><div class="ld"></div><div class="ld"></div>
+          <span>DETECTANDO UBICACIÓN</span>
+        </div>
+        <div id="w-content" style="display:none">
+          <div class="w-loc">📍 UBICACIÓN ACTUAL</div>
+          <div class="w-city" id="w-city">---</div>
+          <div class="w-datetime" id="w-dt">---</div>
+          <div class="w-current">
+            <div class="w-emoji" id="w-icon">🌤️</div>
+            <div>
+              <div class="w-temp" id="w-temp">--°</div>
+              <div class="w-feels" id="w-feels">Sensación: --°C</div>
+              <div class="w-cond" id="w-cond">---</div>
+            </div>
+          </div>
+          <div class="w-details">
+            <div class="w-det"><div class="w-det-lbl">HUMEDAD</div><div class="w-det-val" id="w-hum">--%</div></div>
+            <div class="w-det"><div class="w-det-lbl">VIENTO</div><div class="w-det-val" id="w-wind">-- km/h</div></div>
+            <div class="w-det"><div class="w-det-lbl">PRESIÓN</div><div class="w-det-val" id="w-pres">-- hPa</div></div>
+            <div class="w-det"><div class="w-det-lbl">VISIBILIDAD</div><div class="w-det-val" id="w-vis">-- km</div></div>
+          </div>
+          <div class="w-forecast-title">PRÓXIMOS 4 DÍAS</div>
+          <div class="w-forecast" id="w-forecast"></div>
+        </div>
+      </div>
+
+      <div class="map-card" id="map-card">
+        <div id="map-loading" class="loading">
+          <div class="ld"></div><div class="ld"></div><div class="ld"></div>
+          <span>CARGANDO MAPA METEOROLÓGICO</span>
+        </div>
+        <iframe id="windy-iframe" style="display:none" allowfullscreen></iframe>
+      </div>
+    </div>
+  </section>
+
+  <!-- NEWS -->
+  <section class="section" id="sec-news">
+    <div class="sec-hdr fade-in">
+      <div class="sec-title" style="text-shadow:0 0 30px rgba(255,136,0,0.4)"><span style="color:#ff8800">//</span> NOTICIAS EN TIEMPO REAL</div>
+      <div class="sec-line orange"></div>
+      <div class="sec-desc">Últimas noticias de tecnología · Actualización automática cada 5 min</div>
+    </div>
+    <div class="news-wrap fade-in" style="transition-delay:.1s">
+      <div class="news-grid" id="news-grid">
+        <div class="loading" style="grid-column:1/-1;justify-content:center;padding:3rem">
+          <div class="ld"></div><div class="ld"></div><div class="ld"></div>
+          <span>CARGANDO NOTICIAS</span>
+        </div>
+      </div>
+      <div class="news-footer">
+        <span id="news-updated">Cargando...</span>
+        <button class="refresh-btn" onclick="fetchNews()">↻ ACTUALIZAR</button>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <div class="footer-logo">INNOVATE<span>TECH.INTERNAL</span></div>
+    <div class="footer-sub" id="footer-dt">Sistema Interno v2.0</div>
+  </footer>
+</div>
+
+<script>
+/* ============================================================
+   CUSTOM CURSOR
+   ============================================================ */
+const ring = document.getElementById('cur-ring');
+const dot  = document.getElementById('cur-dot');
+let mx = 0, my = 0, rx = 0, ry = 0;
+
+document.addEventListener('mousemove', e => {
+  mx = e.clientX; my = e.clientY;
+  dot.style.left = mx + 'px'; dot.style.top = my + 'px';
+});
+
+(function animCursor() {
+  rx += (mx - rx) * 0.12;
+  ry += (my - ry) * 0.12;
+  ring.style.left = rx + 'px'; ring.style.top = ry + 'px';
+  requestAnimationFrame(animCursor);
+})();
+
+document.querySelectorAll('a, button').forEach(el => {
+  el.addEventListener('mouseenter', () => { ring.style.width = '50px'; ring.style.height = '50px'; ring.style.borderColor = 'rgba(0,255,255,0.8)'; });
+  el.addEventListener('mouseleave', () => { ring.style.width = '28px'; ring.style.height = '28px'; ring.style.borderColor = 'rgba(255,0,255,0.6)'; });
+});
+
+/* ============================================================
+   THREE.JS SYNTHWAVE BACKGROUND
+   ============================================================ */
+const bgCanvas = document.getElementById('bg-canvas');
+const renderer = new THREE.WebGLRenderer({ canvas: bgCanvas, antialias: true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setClearColor(0x03000c);
+
+const scene = new THREE.Scene();
+scene.fog = new THREE.Fog(0x03000c, 25, 75);
+
+const camera = new THREE.PerspectiveCamera(65, window.innerWidth / window.innerHeight, 0.1, 200);
+camera.position.set(0, 3.5, 12);
+camera.lookAt(0, 1, 0);
+
+/* Color Themes */
+const THEMES = [
+  { g1: new THREE.Color(0xff00ff), g2: new THREE.Color(0x8800ff), sun: new THREE.Color(0xff3300), bg: new THREE.Color(0x03000c), fog: new THREE.Color(0x03000c) },
+  { g1: new THREE.Color(0x00ffff), g2: new THREE.Color(0x0055ff), sun: new THREE.Color(0x0088ff), bg: new THREE.Color(0x000510), fog: new THREE.Color(0x000510) },
+  { g1: new THREE.Color(0x00ff88), g2: new THREE.Color(0x00bbff), sun: new THREE.Color(0x00ff44), bg: new THREE.Color(0x000a05), fog: new THREE.Color(0x000a05) },
+  { g1: new THREE.Color(0xff8800), g2: new THREE.Color(0xff0088), sun: new THREE.Color(0xffaa00), bg: new THREE.Color(0x080200), fog: new THREE.Color(0x080200) },
+];
+
+function lerp(a,b,t){ return a+(b-a)*t; }
+function lerpC(ca,cb,t){ return new THREE.Color(lerp(ca.r,cb.r,t), lerp(ca.g,cb.g,t), lerp(ca.b,cb.b,t)); }
+
+/* Grid */
+const gridGroup = new THREE.Group();
+const gridMats = [];
+
+const GRID_W = 12, GRID_LONG = 80, GRID_STEP = 2;
+// Longitudinal (depth) lines
+for(let x = -GRID_W; x <= GRID_W; x += 1){
+  const geo = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(x,0,5), new THREE.Vector3(x,0,-GRID_LONG)]);
+  const mat = new THREE.LineBasicMaterial({ color: 0xff00ff, transparent: true, opacity: x===0?0.9:0.3 + 0.3*Math.abs(x/GRID_W) });
+  gridMats.push({ mat, type: 'lon' });
+  gridGroup.add(new THREE.Line(geo, mat));
+}
+// Latitudinal (width) lines
+for(let z = 5; z >= -GRID_LONG; z -= GRID_STEP){
+  const geo = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(-GRID_W,0,z), new THREE.Vector3(GRID_W,0,z)]);
+  const mat = new THREE.LineBasicMaterial({ color: 0x9900dd, transparent: true, opacity: 0.2 });
+  gridMats.push({ mat, type: 'lat' });
+  gridGroup.add(new THREE.Line(geo, mat));
+}
+gridGroup.position.y = -2;
+scene.add(gridGroup);
+
+/* Horizon glow line */
+const horizGeo = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(-40,0,-GRID_LONG), new THREE.Vector3(40,0,-GRID_LONG)]);
+const horizMat = new THREE.LineBasicMaterial({ color: 0xff00ff, transparent: true, opacity: 0.8 });
+const horizLine = new THREE.Mesh(); // placeholder
+const horizActual = new THREE.Line(horizGeo, horizMat);
+horizActual.position.y = -2;
+scene.add(horizActual);
+
+/* Sun */
+const sunGroup = new THREE.Group();
+
+// Sun disc via shader
+const sunGeo = new THREE.CircleGeometry(6, 64);
+const sunMat = new THREE.ShaderMaterial({
+  uniforms: {
+    topColor: { value: new THREE.Color(0xff6600) },
+    botColor: { value: new THREE.Color(0xff00bb) }
+  },
+  vertexShader: `
+    varying vec2 vUv;
+    void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }
+  `,
+  fragmentShader: `
+    uniform vec3 topColor;
+    uniform vec3 botColor;
+    varying vec2 vUv;
+    void main(){
+      float d = distance(vUv, vec2(0.5));
+      if(d > 0.5) discard;
+      float edge = smoothstep(0.45,0.5,d);
+      vec3 col = mix(topColor, botColor, 1.0 - vUv.y);
+      float alpha = 1.0 - edge;
+      gl_FragColor = vec4(col, alpha);
+    }
+  `,
+  transparent: true,
+  side: THREE.DoubleSide,
+  depthWrite: false
+});
+const sunMesh = new THREE.Mesh(sunGeo, sunMat);
+sunGroup.add(sunMesh);
+
+// Horizontal scan stripes on sun
+for(let i=0;i<9;i++){
+  const h = 0.15 + i*0.06;
+  const sg = new THREE.PlaneGeometry(12, h);
+  const sm = new THREE.MeshBasicMaterial({ color:0x03000c, side:THREE.DoubleSide, depthWrite:false });
+  const s  = new THREE.Mesh(sg,sm);
+  s.position.set(0, -0.8 - i*(0.28+i*0.03), 0.01);
+  sunGroup.add(s);
+}
+
+// Glow rings
+for(let r=0;r<4;r++){
+  const rg = new THREE.RingGeometry(6+r*0.6, 6+r*0.6+0.15, 64);
+  const rm = new THREE.MeshBasicMaterial({ color:0xff3300, transparent:true, opacity:0.25-r*0.05, side:THREE.DoubleSide, depthWrite:false });
+  sunGroup.add(new THREE.Mesh(rg,rm));
+}
+
+sunGroup.position.set(0, 5, -55);
+scene.add(sunGroup);
+
+/* Stars */
+const starCount = 3500;
+const starPos = new Float32Array(starCount * 3);
+for(let i=0;i<starCount;i++){
+  starPos[i*3]   = (Math.random()-0.5)*180;
+  starPos[i*3+1] = Math.random()*60 + 3;
+  starPos[i*3+2] = (Math.random()-0.5)*180;
+}
+const starGeo = new THREE.BufferGeometry();
+starGeo.setAttribute('position', new THREE.BufferAttribute(starPos, 3));
+const starMat = new THREE.PointsMaterial({ color:0xffffff, size:0.18, transparent:true, opacity:0.85, sizeAttenuation:true });
+scene.add(new THREE.Points(starGeo, starMat));
+
+/* Animation state */
+let gridZ = 0;
+let time = 0;
+let scrollY = 0;
+
+window.addEventListener('scroll', () => { scrollY = window.scrollY; }, { passive: true });
+
+function animate(){
+  requestAnimationFrame(animate);
+  time += 0.008;
+
+  // Grid drift toward camera
+  gridZ += 0.025;
+  if(gridZ >= GRID_STEP) gridZ -= GRID_STEP;
+  gridGroup.position.z = gridZ;
+  horizActual.position.z = gridZ;
+
+  // Camera gentle movement
+  camera.position.x = Math.sin(time * 0.22) * 0.6;
+  camera.position.y = 3.5 + Math.sin(time * 0.31) * 0.2;
+  camera.lookAt(Math.sin(time*0.18)*0.2, 1, 0);
+
+  // Scroll color transitions
+  const maxScroll = Math.max(document.body.scrollHeight - window.innerHeight, 1);
+  const sp = scrollY / maxScroll;
+  const n = THEMES.length;
+  const pos = sp * (n-1);
+  const idx = Math.floor(pos);
+  const frac = pos - idx;
+  const ta = THEMES[Math.min(idx, n-1)];
+  const tb = THEMES[Math.min(idx+1, n-1)];
+
+  const curG1  = lerpC(ta.g1,  tb.g1,  frac);
+  const curG2  = lerpC(ta.g2,  tb.g2,  frac);
+  const curSun = lerpC(ta.sun, tb.sun, frac);
+  const curBg  = lerpC(ta.bg,  tb.bg,  frac);
+  const curFog = lerpC(ta.fog, tb.fog, frac);
+
+  // Update grid lines
+  for(const {mat, type} of gridMats){
+    if(type==='lon') mat.color.copy(curG1);
+    else mat.color.copy(curG2);
+  }
+
+  // Update horizon
+  horizMat.color.copy(curG1);
+
+  // Update sun
+  sunMat.uniforms.topColor.value.copy(curSun);
+  sunMat.uniforms.botColor.value.set(
+    Math.min(curSun.r * 0.5, 1),
+    0,
+    Math.min(curSun.b * 0.8 + curG2.b * 0.3, 1)
+  );
+
+  // Update bg and fog
+  renderer.setClearColor(curBg);
+  if(scene.fog){ scene.fog.color.copy(curFog); }
+
+  // Subtle star color tint
+  starMat.color.copy(new THREE.Color().lerpColors(new THREE.Color(0xffffff), curG1, 0.3));
+
+  renderer.render(scene, camera);
+}
+
+animate();
+
+window.addEventListener('resize', () => {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+});
+
+/* ============================================================
+   CLOCK
+   ============================================================ */
+function updateClock(){
+  const now = new Date();
+  const timeStr  = now.toLocaleTimeString('es-ES');
+  const dateStr  = now.toLocaleDateString('es-ES', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
+  const shortDate = now.toLocaleDateString('es-ES', { day:'2-digit', month:'short', year:'numeric' });
+
+  document.getElementById('nav-time').textContent = timeStr;
+  document.getElementById('stat-time').textContent = timeStr;
+  document.getElementById('stat-date').textContent = shortDate;
+  document.getElementById('footer-dt').textContent = 'Sistema Interno v2.0 · ' + dateStr;
+  const wdt = document.getElementById('w-dt');
+  if(wdt) wdt.textContent = dateStr + ' · ' + timeStr;
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+/* ============================================================
+   PUBLIC IP
+   ============================================================ */
+async function fetchIP(){
+  try {
+    const r = await fetch('https://api.ipify.org?format=json');
+    const d = await r.json();
+    document.getElementById('nav-ip').textContent = d.ip;
+    document.getElementById('stat-ip').textContent = d.ip;
+  } catch(e) {
+    document.getElementById('nav-ip').textContent = 'N/A';
+    document.getElementById('stat-ip').textContent = 'N/A';
+  }
+}
+
+/* ============================================================
+   WEATHER
+   ============================================================ */
+const WMO = {
+  0:['Cielo despejado','☀️'], 1:['Principalmente despejado','🌤️'],
+  2:['Parcialmente nublado','⛅'], 3:['Nublado','☁️'],
+  45:['Niebla','🌫️'], 48:['Niebla con escarcha','🌫️'],
+  51:['Llovizna ligera','🌦️'], 53:['Llovizna moderada','🌦️'], 55:['Llovizna intensa','🌧️'],
+  61:['Lluvia ligera','🌧️'], 63:['Lluvia moderada','🌧️'], 65:['Lluvia intensa','🌧️'],
+  71:['Nevada ligera','🌨️'], 73:['Nevada moderada','🌨️'], 75:['Nevada intensa','❄️'],
+  77:['Granizo menudo','🌨️'],
+  80:['Chubascos ligeros','🌦️'], 81:['Chubascos moderados','🌧️'], 82:['Chubascos violentos','⛈️'],
+  85:['Chubascos de nieve','🌨️'], 86:['Chubascos de nieve intensos','❄️'],
+  95:['Tormenta','⛈️'], 96:['Tormenta con granizo','⛈️'], 99:['Tormenta con granizo intenso','⛈️'],
+};
+const DAYS = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+
+async function fetchWeather(lat, lon){
+  try {
+    const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}`
+      + `&current_weather=true`
+      + `&hourly=relativehumidity_2m,apparent_temperature,surface_pressure,visibility`
+      + `&daily=weathercode,temperature_2m_max,temperature_2m_min`
+      + `&timezone=auto&forecast_days=5`;
+    const r = await fetch(url);
+    const d = await r.json();
+    const cw = d.current_weather;
+    const h = d.hourly;
+    const hourIdx = new Date().getHours();
+
+    const [desc, icon] = WMO[cw.weathercode] || ['Desconocido','🌡️'];
+    const feels = Math.round(h.apparent_temperature[hourIdx]);
+    const hum   = h.relativehumidity_2m[hourIdx];
+    const pres  = Math.round(h.surface_pressure[hourIdx]);
+    const vis   = Math.round((h.visibility[hourIdx]||0) / 1000);
+
+    document.getElementById('w-icon').textContent  = icon;
+    document.getElementById('w-temp').textContent  = `${Math.round(cw.temperature)}°C`;
+    document.getElementById('w-feels').textContent = `Sensación térmica: ${feels}°C`;
+    document.getElementById('w-cond').textContent  = desc;
+    document.getElementById('w-wind').textContent  = `${Math.round(cw.windspeed)} km/h`;
+    document.getElementById('w-hum').textContent   = `${hum}%`;
+    document.getElementById('w-pres').textContent  = `${pres} hPa`;
+    document.getElementById('w-vis').textContent   = `${vis} km`;
+    document.getElementById('nav-weather').textContent = `${icon} ${Math.round(cw.temperature)}°C`;
+    document.getElementById('stat-weather').textContent = `${icon} ${Math.round(cw.temperature)}°C · ${desc}`;
+
+    // Forecast
+    let fc = '';
+    for(let i=1;i<5;i++){
+      const dt = new Date(d.daily.time[i]+'T00:00:00');
+      const [fd,fi] = WMO[d.daily.weathercode[i]] || ['?','🌡️'];
+      const hi = Math.round(d.daily.temperature_2m_max[i]);
+      const lo = Math.round(d.daily.temperature_2m_min[i]);
+      fc += `<div class="w-fday">
+        <div class="f-name">${DAYS[dt.getDay()]}</div>
+        <div class="f-ico">${fi}</div>
+        <div class="f-hi">${hi}°</div>
+        <div class="f-lo">${lo}°</div>
+      </div>`;
+    }
+    document.getElementById('w-forecast').innerHTML = fc;
+
+    document.getElementById('w-loading').style.display = 'none';
+    document.getElementById('w-content').style.display = 'block';
+
+    // Windy map
+    const iframe = document.getElementById('windy-iframe');
+    const wlat = lat.toFixed(4), wlon = lon.toFixed(4);
+    iframe.src = `https://embed.windy.com/embed2.html?lat=${wlat}&lon=${wlon}&detailLat=${wlat}&detailLon=${wlon}&width=650&height=480&zoom=6&level=surface&overlay=wind&product=ecmwf&menu=&message=true&marker=true&calendar=now&pressure=true&type=map&location=coordinates&detail=&metricWind=default&metricTemp=default&radarRange=-1`;
+    iframe.style.display = 'block';
+    document.getElementById('map-loading').style.display = 'none';
+
+  } catch(e) {
+    document.getElementById('w-loading').innerHTML = '<span style="color:#ff4444;font-family:var(--font-display);font-size:.7rem;letter-spacing:2px">ERROR AL CARGAR EL CLIMA</span>';
+  }
+}
+
+async function fetchGeoName(lat, lon){
+  try {
+    const r = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&accept-language=es`);
+    const d = await r.json();
+    const a = d.address;
+    const city = a.city || a.town || a.village || a.municipality || a.county || '';
+    const country = a.country || '';
+    document.getElementById('w-city').textContent = `${city}${country ? ', ' + country : ''}`;
+  } catch(e) {}
+}
+
+function initGeo(){
+  if('geolocation' in navigator){
+    navigator.geolocation.getCurrentPosition(
+      pos => {
+        fetchWeather(pos.coords.latitude, pos.coords.longitude);
+        fetchGeoName(pos.coords.latitude, pos.coords.longitude);
+      },
+      () => {
+        // Fallback: Barcelona
+        fetchWeather(41.3851, 2.1734);
+        fetchGeoName(41.3851, 2.1734);
+        document.getElementById('w-city').textContent = 'Barcelona, España';
+      }
+    );
+  } else {
+    fetchWeather(41.3851, 2.1734);
+    fetchGeoName(41.3851, 2.1734);
+  }
+}
+
+/* ============================================================
+   HACKER NEWS FEED
+   ============================================================ */
+async function fetchNews(){
+  const grid = document.getElementById('news-grid');
+  grid.innerHTML = `<div class="loading" style="grid-column:1/-1;justify-content:center;padding:3rem">
+    <div class="ld"></div><div class="ld"></div><div class="ld"></div>
+    <span>CARGANDO NOTICIAS</span>
+  </div>`;
+
+  try {
+    const idsR = await fetch('https://hacker-news.firebaseio.com/v0/topstories.json');
+    const ids  = await idsR.json();
+    const top  = ids.slice(0, 18);
+
+    const stories = await Promise.all(
+      top.map(id => fetch(`https://hacker-news.firebaseio.com/v0/item/${id}.json`).then(r=>r.json()))
+    );
+
+    const valid = stories.filter(s => s && s.title && (s.url || s.type==='story'));
+
+    grid.innerHTML = valid.slice(0,12).map(s => {
+      let domain = 'news.ycombinator.com';
+      try { domain = new URL(s.url).hostname.replace('www.',''); } catch(e){}
+      const dt = new Date((s.time||0)*1000);
+      const ts = dt.toLocaleString('es-ES',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
+      const href = s.url || `https://news.ycombinator.com/item?id=${s.id}`;
+      return `<a href="${href}" target="_blank" rel="noopener noreferrer" class="news-card">
+        <div class="news-src">${domain}</div>
+        <div class="news-ttl">${s.title}</div>
+        <div class="news-meta">
+          <span class="news-time">${ts}</span>
+          <span class="news-score">▲ ${s.score||0}</span>
+        </div>
+      </a>`;
+    }).join('');
+
+    document.getElementById('news-updated').textContent =
+      `Última actualización: ${new Date().toLocaleTimeString('es-ES')}`;
+  } catch(e) {
+    grid.innerHTML = `<div style="color:#ff4444;grid-column:1/-1;text-align:center;padding:3rem;font-family:var(--font-display);font-size:.7rem;letter-spacing:2px">
+      ERROR AL CARGAR NOTICIAS · COMPRUEBA LA CONEXIÓN
+    </div>`;
+  }
+}
+
+setInterval(fetchNews, 5*60*1000);
+
+/* ============================================================
+   SCROLL ANIMATIONS (Intersection Observer)
+   ============================================================ */
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(e => {
+    if(e.isIntersecting) e.target.classList.add('visible');
+  });
+}, { threshold: 0.1 });
+
+document.querySelectorAll('.fade-in').forEach(el => observer.observe(el));
+
+/* ============================================================
+   INIT
+   ============================================================ */
+fetchIP();
+initGeo();
+fetchNews();
+</script>
+</body>
+</html>
